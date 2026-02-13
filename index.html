@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>生日快乐连连看</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #fce4ec, #f8bbd0);
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            padding: 15px 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            color: #e91e63;
+            font-size: 1.5em;
+            margin: 0;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 5px;
+            width: 100%;
+            max-width: 350px;
+            margin: 10px auto;
+            background-color: rgba(255, 255, 255, 0.3);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .card {
+            aspect-ratio: 1;
+            background-size: cover;
+            background-position: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card.flipped {
+            opacity: 0.8;
+            transform: scale(0.95);
+        }
+
+        .card.selected {
+            transform: scale(0.9);
+            box-shadow: 0 0 15px #ffeb3b, inset 0 0 15px rgba(255, 235, 59, 0.5);
+        }
+
+        .card.matched {
+            opacity: 0.5;
+            visibility: hidden;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 15px 0;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            background: linear-gradient(to right, #e91e63, #9c27b0);
+            color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            flex: 1;
+            max-width: 150px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .moves-counter {
+            text-align: center;
+            font-size: 18px;
+            color: #880e4f;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .win-message {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .win-content {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .baby-image {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 20px;
+            display: block;
+        }
+
+        .reward-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin: 20px 0;
+        }
+
+        .restart-btn {
+            margin-top: 20px;
+            background: linear-gradient(to right, #4caf50, #2e7d32);
+            padding: 15px 30px;
+            font-size: 18px;
+        }
+
+        @media (max-width: 400px) {
+            .game-board {
+                grid-template-columns: repeat(6, 1fr);
+                max-width: 280px;
+            }
+            
+            .card {
+                width: calc(280px / 6 - 6px);
+                height: calc(280px / 6 - 6px);
+            }
+            
+            .header h1 {
+                font-size: 1.2em;
+            }
+            
+            .reward-text {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎂 生日快乐连连看 🎂</h1>
+    </div>
+    
+    <div class="game-container">
+        <div class="moves-counter">步数: <span id="moves">0</span></div>
+        
+        <div class="game-board" id="game-board"></div>
+        
+        <div class="controls">
+            <button id="reset-btn">重新开始</button>
+            <button id="hint-btn">提示</button>
+        </div>
+    </div>
+    
+    <div class="win-message" id="win-message">
+        <div class="win-content">
+            <svg class="baby-image" viewBox="0 0 100 100">
+                <!-- 小胖宝宝头部 -->
+                <circle cx="50" cy="35" r="18" fill="#FFCCBC"/>
+                <!-- 胖胖的脸颊 -->
+                <circle cx="35" cy="38" r="6" fill="#FFCCBC"/>
+                <circle cx="65" cy="38" r="6" fill="#FFCCBC"/>
+                <!-- 眼睛 -->
+                <circle cx="42" cy="32" r="3" fill="#000"/>
+                <circle cx="58" cy="32" r="3" fill="#000"/>
+                <!-- 笑脸 -->
+                <path d="M 40 45 Q 50 50 60 45" stroke="#000" stroke-width="1.5" fill="none"/>
+                <!-- 胖胖的身体 -->
+                <ellipse cx="50" cy="65" rx="18" ry="15" fill="#E91E63"/>
+                <!-- 手臂 -->
+                <ellipse cx="32" cy="60" rx="6" ry="10" fill="#FFCCBC"/>
+                <ellipse cx="68" cy="60" rx="6" ry="10" fill="#FFCCBC"/>
+                <!-- 小手 -->
+                <circle cx="32" cy="72" r="4" fill="#FFCCBC"/>
+                <circle cx="68" cy="72" r="4" fill="#FFCCBC"/>
+                <!-- 小腿 -->
+                <rect x="42" y="75" width="5" height="12" fill="#9C27B0" rx="2"/>
+                <rect x="53" y="75" width="5" height="12" fill="#9C27B0" rx="2"/>
+                <!-- 小脚 -->
+                <ellipse cx="44" cy="88" rx="5" ry="3" fill="#FFCCBC"/>
+                <ellipse cx="56" cy="88" rx="5" ry="3" fill="#FFCCBC"/>
+            </svg>
+            <div class="reward-text">奖励家庭基金200000元</div>
+            <p>🎉 恭喜通关！🎉</p>
+            <p>祝亲爱的生日快乐！</p>
+            <button class="restart-btn" id="win-restart-btn">再玩一次</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 游戏配置
+            const config = {
+                rows: 4,
+                cols: 6,
+                totalPairs: 12
+            };
+            
+            // 关卡配置
+            const levels = [
+                { 
+                    rows: 4, 
+                    cols: 6, 
+                    totalPairs: 12,
+                    levelName: "第一关"
+                },
+                { 
+                    rows: 6, 
+                    cols: 6, 
+                    totalPairs: 18,
+                    levelName: "第二关"
+                },
+                { 
+                    rows: 8, 
+                    cols: 6, 
+                    totalPairs: 24,
+                    levelName: "第三关"
+                }
+            ];
+            
+            let currentLevel = 0;
+
+            // 图片资源路径
+            const imagePaths = [
+                "assets/resized/resized_IMG_1460571872_20260213_205137980.jpg.jpg",
+                "assets/resized/resized_IMG_1460582814_20260213_205148354.jpg.jpg",
+                "assets/resized/resized_IMG_1460598394_20260213_205204710.jpg.jpg",
+                "assets/resized/resized_IMG_1460608606_20260213_205214914.jpg.jpg",
+                "assets/resized/resized_IMG_1460619919_20260213_205226003.jpg.jpg",
+                "assets/resized/resized_IMG_1460630037_20260213_205236361.jpg.jpg",
+                "assets/resized/resized_IMG_1460636738_20260213_205243102.jpg.jpg",
+                "assets/resized/resized_IMG_1460640343_20260213_205246667.jpg.jpg",
+                "assets/resized/resized_IMG_1460652915_20260213_205258735.jpg.jpg",
+                "assets/resized/resized_IMG_1460670236_20260213_205316032.jpg.jpg",
+                "assets/resized/resized_IMG_1460678816_20260213_205324924.jpg.jpg",
+                "assets/resized/resized_IMG_1460685331_20260213_205331663.jpg.jpg",
+                "assets/resized/resized_IMG_1460696568_20260213_205342116.jpg.jpg",
+                "assets/resized/resized_IMG_1460701077_20260213_205346633.jpg.jpg",
+                "assets/resized/resized_IMG_1460712403_20260213_205357967.jpg.jpg",
+                "assets/resized/resized_IMG_1460722344_20260213_205408436.jpg.jpg",
+                "assets/resized/resized_IMG_1460731823_20260213_205417395.jpg.jpg",
+                "assets/resized/resized_IMG_1460742242_20260213_205428606.jpg.jpg",
+                "assets/resized/resized_IMG_1460747277_20260213_205433617.jpg.jpg",
+                "assets/resized/resized_IMG_1460752190_20260213_205437986.jpg.jpg",
+                "assets/resized/resized_IMG_1460765300_20260213_205451624.jpg.jpg",
+                "assets/resized/resized_IMG_1460772501_20260213_205458569.jpg.jpg",
+                "assets/resized/resized_IMG_1460782871_20260213_205508683.jpg.jpg",
+                "assets/resized/resized_IMG_1460791812_20260213_205518168.jpg.jpg",
+                "assets/resized/resized_IMG_1460798179_20260213_205524287.jpg.jpg",
+                "assets/resized/resized_IMG_1460808895_20260213_205534947.jpg.jpg",
+                "assets/resized/resized_IMG_1460813617_20260213_205539437.jpg.jpg",
+                "assets/resized/resized_IMG_1460823414_20260213_205549226.jpg.jpg",
+                "assets/resized/resized_IMG_1460827681_20260213_205554045.jpg.jpg",
+                "assets/resized/resized_IMG_1460833043_20260213_205558863.jpg.jpg",
+                "assets/resized/resized_IMG_1460840528_20260213_205606860.jpg.jpg",
+                "assets/resized/resized_IMG_1460844814_20260213_205610642.jpg.jpg",
+                "assets/resized/resized_IMG_1460853361_20260213_205619693.jpg.jpg",
+                "assets/resized/resized_IMG_1460869567_20260213_205635107.jpg.jpg",
+                "assets/resized/resized_IMG_1460876858_20260213_205643174.jpg.jpg",
+                "assets/resized/resized_IMG_1460882952_20260213_205649300.jpg.jpg",
+                "assets/resized/resized_IMG_1460889200_20260213_205655532.jpg.jpg",
+                "assets/resized/resized_IMG_1460896011_20260213_205701847.jpg.jpg",
+                "assets/resized/resized_IMG_1460899892_20260213_205706216.jpg.jpg",
+                "assets/resized/resized_IMG_1460909656_20260213_205715972.jpg.jpg",
+                "assets/resized/resized_IMG_1460914607_20260213_205720179.jpg.jpg",
+                "assets/resized/resized_IMG_1460925044_20260213_205731368.jpg.jpg",
+                "assets/resized/resized_IMG_1460930917_20260213_205736761.jpg.jpg",
+                "assets/resized/resized_IMG_1460935728_20260213_205742060.jpg.jpg",
+                "assets/resized/resized_IMG_1460945656_20260213_205751716.jpg.jpg",
+                "assets/resized/resized_IMG_1460952791_20260213_205758859.jpg.jpg",
+                "assets/resized/resized_IMG_1460961651_20260213_205807471.jpg.jpg",
+                "assets/resized/resized_IMG_1460969353_20260213_205814933.jpg.jpg",
+                "assets/resized/resized_IMG_1460974059_20260213_205819639.jpg.jpg",
+                "assets/resized/resized_IMG_1460985631_20260213_205831427.jpg.jpg",
+                "assets/resized/resized_IMG_1460993015_20260213_205838571.jpg.jpg",
+                "assets/resized/resized_IMG_1460997927_20260213_205843771.jpg.jpg",
+                "assets/resized/resized_IMG_1461007587_20260213_205853695.jpg.jpg",
+                "assets/resized/resized_IMG_1461012535_20260213_205858859.jpg.jpg",
+                "assets/resized/resized_IMG_1461069887_20260213_205956195.jpg.jpg",
+                "assets/resized/resized_IMG_1461077956_20260213_210003544.jpg.jpg",
+                "assets/resized/resized_IMG_1461084840_20260213_210010932.jpg.jpg",
+                "assets/resized/resized_IMG_1461097108_20260213_210023176.jpg.jpg",
+                "assets/resized/resized_IMG_1461117837_20260213_210043409.jpg.jpg",
+                "assets/resized/resized_IMG_1461124920_20260213_210050724.jpg.jpg",
+                "assets/resized/resized_IMG_1461131213_20260213_210056785.jpg.jpg",
+                "assets/resized/resized_IMG_1461136057_20260213_210102117.jpg.jpg",
+                "assets/resized/resized_IMG_1461143438_20260213_210109010.jpg.jpg",
+                "assets/resized/resized_IMG_1461147810_20260213_210113918.jpg.jpg",
+                "assets/resized/resized_IMG_1461160303_20260213_210126131.jpg.jpg",
+                "assets/resized/resized_IMG_1461172549_20260213_210138393.jpg.jpg",
+                "assets/resized/resized_IMG_1461191936_20260213_210157788.jpg.jpg",
+                "assets/resized/resized_IMG_1461201494_20260213_210207818.jpg.jpg",
+                "assets/resized/resized_IMG_1461218269_20260213_210223809.jpg.jpg",
+                "assets/resized/resized_IMG_1461225326_20260213_210231154.jpg.jpg",
+                "assets/resized/resized_IMG_1461260918_20260213_210307242.jpg.jpg",
+                "assets/resized/resized_IMG_1461297983_20260213_210343779.jpg.jpg",
+                "assets/resized/resized_IMG_1461327450_20260213_210413766.jpg.jpg",
+                "assets/resized/resized_IMG_1461353671_20260213_210439771.jpg.jpg",
+                "assets/resized/resized_IMG_1461364880_20260213_210450956.jpg.jpg",
+                "assets/resized/resized_IMG_1461370633_20260213_210456469.jpg.jpg",
+                "assets/resized/resized_IMG_1461374804_20260213_210500616.heic.jpg",
+                "assets/resized/resized_IMG_1461386749_20260213_210512289.jpg.jpg",
+                "assets/resized/resized_IMG_1461401431_20260213_210527243.jpg.jpg",
+                "assets/resized/resized_IMG_1461418641_20260213_210544717.jpg.jpg",
+                "assets/resized/resized_IMG_1461428759_20260213_210555083.heic.jpg",
+                "assets/resized/resized_IMG_1461435203_20260213_210601055.jpg.jpg",
+                "assets/resized/resized_IMG_1461443688_20260213_210610036.jpg.jpg",
+                "assets/resized/resized_IMG_1461449409_20260213_210615517.jpg.jpg",
+                "assets/resized/resized_IMG_1461456693_20260213_210622505.jpg.jpg",
+                "assets/resized/resized_IMG_1461465211_20260213_210631527.jpg.jpg",
+                "assets/resized/resized_IMG_1461479559_20260213_210645659.jpg.jpg",
+                "assets/resized/resized_IMG_1461484403_20260213_210650223.jpg.jpg",
+                "assets/resized/resized_IMG_1461491194_20260213_210656742.jpg.jpg"
+            ];
+
+            // 从可用图片中随机选择指定数量的图片对
+            function getRandomImages(count) {
+                // 从所有可用图片中随机选择指定数量的不同图片
+                // 确保不会重复使用同一张图片超过所需数量
+                const shuffled = [...imagePaths].sort(() => 0.5 - Math.random());
+                
+                // 如果需要的图片对数量超过了可用图片数量，复制数组以满足需求
+                if(count > shuffled.length) {
+                    const extendedImages = [];
+                    for(let i = 0; i < count; i++) {
+                        extendedImages.push(shuffled[i % shuffled.length]);
+                    }
+                    // 再次打乱以避免明显的重复模式
+                    return extendedImages.sort(() => 0.5 - Math.random());
+                } else {
+                    return shuffled.slice(0, count);
+                }
+            }
+
+            // 创建卡片数据
+            function createCards() {
+                const selectedImages = getRandomImages(config.totalPairs);
+                let cards = [];
+                
+                // 每个图片创建两个卡片（一对）
+                for (let i = 0; i < selectedImages.length; i++) {
+                    cards.push({ id: i, image: selectedImages[i], matched: false });
+                    cards.push({ id: i, image: selectedImages[i], matched: false });
+                }
+                
+                // 打乱卡片顺序
+                return cards.sort(() => 0.5 - Math.random());
+            }
+
+            // 游戏状态
+            const gameState = {
+                cards: [],
+                flippedCards: [],
+                matchedPairs: 0,
+                moves: 0,
+                canFlip: true,
+                levelComplete: false
+            };
+
+            // DOM 元素
+            const gameBoard = document.getElementById('game-board');
+            const movesDisplay = document.getElementById('moves');
+            const resetBtn = document.getElementById('reset-btn');
+            const hintBtn = document.getElementById('hint-btn');
+            const winMessage = document.getElementById('win-message');
+            const winRestartBtn = document.getElementById('win-restart-btn');
+
+            // 初始化游戏
+            function initGame() {
+                const levelConfig = levels[currentLevel];
+                
+                // 更新游戏配置
+                config.rows = levelConfig.rows;
+                config.cols = levelConfig.cols;
+                config.totalPairs = levelConfig.totalPairs;
+                
+                gameState.cards = createCards();
+                gameState.flippedCards = [];
+                gameState.matchedPairs = 0;
+                gameState.moves = 0;
+                gameState.canFlip = true;
+                gameState.levelComplete = false;
+                
+                movesDisplay.textContent = gameState.moves;
+                gameBoard.innerHTML = '';
+                
+                // 设置游戏板网格
+                gameBoard.style.gridTemplateColumns = `repeat(${config.cols}, 1fr)`;
+                gameBoard.style.gridTemplateRows = `repeat(${config.rows}, 1fr)`;
+                
+                // 创建卡片元素
+                gameState.cards.forEach((card, index) => {
+                    const cardElement = document.createElement('div');
+                    cardElement.className = 'card';
+                    cardElement.dataset.index = index;
+                    
+                    // 使用背景图片方式显示图片
+                    cardElement.style.backgroundImage = `url('${card.image}')`;
+                    
+                    cardElement.addEventListener('click', () => flipCard(cardElement, index));
+                    gameBoard.appendChild(cardElement);
+                });
+            }
+
+            // 翻转卡片
+            function flipCard(cardElement, index) {
+                if (!gameState.canFlip) return;
+                if (cardElement.classList.contains('flipped')) return;
+                if (gameState.flippedCards.length >= 2) return;
+                
+                cardElement.classList.add('flipped');
+                cardElement.classList.add('selected');
+                
+                gameState.flippedCards.push({ element: cardElement, index: index });
+                
+                if (gameState.flippedCards.length === 2) {
+                    gameState.moves++;
+                    movesDisplay.textContent = gameState.moves;
+                    
+                    gameState.canFlip = false;
+                    
+                    const card1 = gameState.flippedCards[0];
+                    const card2 = gameState.flippedCards[1];
+                    
+                    if (gameState.cards[card1.index].id === gameState.cards[card2.index].id) {
+                        // 匹配成功
+                        setTimeout(() => {
+                            card1.element.classList.add('matched');
+                            card2.element.classList.add('matched');
+                            
+                            gameState.matchedPairs++;
+                            
+                            gameState.flippedCards = [];
+                            gameState.canFlip = true;
+                            
+                            // 检查是否完成游戏
+                            if (gameState.matchedPairs === config.totalPairs) {
+                                setTimeout(showWinMessage, 500);
+                            }
+                        }, 500);
+                    } else {
+                        // 不匹配，翻回去
+                        setTimeout(() => {
+                            card1.element.classList.remove('flipped', 'selected');
+                            card2.element.classList.remove('flipped', 'selected');
+                            
+                            gameState.flippedCards = [];
+                            gameState.canFlip = true;
+                        }, 1000);
+                    }
+                }
+            }
+
+            // 显示胜利消息
+            function showWinMessage() {
+                if(currentLevel < levels.length - 1) {
+                    // 还有下一关
+                    setTimeout(() => {
+                        currentLevel++;
+                        alert(`恭喜完成${levels[currentLevel-1].levelName}！进入${levels[currentLevel].levelName}`);
+                        initGame();
+                    }, 600);
+                } else {
+                    // 所有关卡完成
+                    winMessage.style.display = 'flex';
+                }
+            }
+
+            // 重置游戏
+            function resetGame() {
+                winMessage.style.display = 'none';
+                initGame();
+            }
+
+            // 提示功能
+            function showHint() {
+                if (!gameState.canFlip || gameState.flippedCards.length >= 2) return;
+                
+                // 寻找可匹配的卡片对
+                const unflippedCards = [];
+                for (let i = 0; i < gameState.cards.length; i++) {
+                    const cardElement = document.querySelector(`.card[data-index="${i}"]`);
+                    if (!cardElement.classList.contains('flipped') && !cardElement.classList.contains('matched')) {
+                        unflippedCards.push({ index: i, card: gameState.cards[i], element: cardElement });
+                    }
+                }
+                
+                // 查找是否有相同的卡片
+                for (let i = 0; i < unflippedCards.length; i++) {
+                    for (let j = i + 1; j < unflippedCards.length; j++) {
+                        if (unflippedCards[i].card.id === unflippedCards[j].card.id) {
+                            // 高亮这两个卡片一会儿
+                            unflippedCards[i].element.style.boxShadow = '0 0 20px #ffeb3b, inset 0 0 20px rgba(255, 235, 59, 0.5)';
+                            unflippedCards[j].element.style.boxShadow = '0 0 20px #ffeb3b, inset 0 0 20px rgba(255, 235, 59, 0.5)';
+                            
+                            setTimeout(() => {
+                                if (!unflippedCards[i].element.classList.contains('flipped')) {
+                                    unflippedCards[i].element.style.boxShadow = '';
+                                }
+                                if (!unflippedCards[j].element.classList.contains('flipped')) {
+                                    unflippedCards[j].element.style.boxShadow = '';
+                                }
+                            }, 1000);
+                            
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // 事件监听器
+            resetBtn.addEventListener('click', resetGame);
+            hintBtn.addEventListener('click', showHint);
+            winRestartBtn.addEventListener('click', resetGame);
+
+            // 初始化游戏
+            initGame();
+        });
+    </script>
+</body>
+</html>
