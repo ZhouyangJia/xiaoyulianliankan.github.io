@@ -47,17 +47,19 @@
         .game-board {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
-            gap: 5px;
+            gap: 10px;
             width: 100%;
-            max-width: 350px;
+            max-width: 450px;
             margin: 10px auto;
             background-color: rgba(255, 255, 255, 0.3);
-            padding: 10px;
-            border-radius: 10px;
+            padding: 15px;
+            border-radius: 12px;
         }
 
         .card {
-            aspect-ratio: 1;
+            width: 80%;
+            height: 120%;
+            aspect-ratio: 3 / 4;
             background-size: cover;
             background-position: center;
             border-radius: 8px;
@@ -66,6 +68,23 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             position: relative;
             overflow: hidden;
+        }
+        
+        .card.selected {
+            transform: scale(0.85);
+            box-shadow: 0 0 15px #ffeb3b, inset 0 0 15px rgba(255, 235, 59, 0.5);
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            width: 100%;
+            max-width: 400px;
+            margin: 10px auto;
+            background-color: rgba(255, 255, 255, 0.3);
+            padding: 10px;
+            border-radius: 10px;
         }
 
         .card.flipped {
@@ -142,6 +161,7 @@
 
         .win-content {
             background: linear-gradient(135deg, #ff9800, #f57c00);
+            padding: 10px;
             padding: 30px;
             border-radius: 20px;
             max-width: 90%;
@@ -149,8 +169,8 @@
         }
 
         .baby-image {
-            width: 150px;
-            height: 150px;
+            width: 200px;
+            height: 200px;
             margin: 0 auto 20px;
             display: block;
         }
@@ -176,18 +196,19 @@
                 max-width: 280px;
             }
             
-            .card {
-                width: calc(280px / 6 - 6px);
-                height: calc(280px / 6 - 6px);
-            }
-            
-            .header h1 {
-                font-size: 1.2em;
-            }
-            
-            .reward-text {
-                font-size: 20px;
-            }
+        .card {
+            width: 75%;
+            height: 100%;
+            aspect-ratio: 3 / 4;
+            background-size: cover;
+            background-position: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
         }
     </style>
 </head>
@@ -198,6 +219,7 @@
     
     <div class="game-container">
         <div class="moves-counter">步数: <span id="moves">0</span></div>
+        <div class="timer">时间: <span id="timer">00:00</span></div>
         
         <div class="game-board" id="game-board"></div>
         
@@ -209,32 +231,7 @@
     
     <div class="win-message" id="win-message">
         <div class="win-content">
-            <svg class="baby-image" viewBox="0 0 100 100">
-                <!-- 小胖宝宝头部 -->
-                <circle cx="50" cy="35" r="18" fill="#FFCCBC"/>
-                <!-- 胖胖的脸颊 -->
-                <circle cx="35" cy="38" r="6" fill="#FFCCBC"/>
-                <circle cx="65" cy="38" r="6" fill="#FFCCBC"/>
-                <!-- 眼睛 -->
-                <circle cx="42" cy="32" r="3" fill="#000"/>
-                <circle cx="58" cy="32" r="3" fill="#000"/>
-                <!-- 笑脸 -->
-                <path d="M 40 45 Q 50 50 60 45" stroke="#000" stroke-width="1.5" fill="none"/>
-                <!-- 胖胖的身体 -->
-                <ellipse cx="50" cy="65" rx="18" ry="15" fill="#E91E63"/>
-                <!-- 手臂 -->
-                <ellipse cx="32" cy="60" rx="6" ry="10" fill="#FFCCBC"/>
-                <ellipse cx="68" cy="60" rx="6" ry="10" fill="#FFCCBC"/>
-                <!-- 小手 -->
-                <circle cx="32" cy="72" r="4" fill="#FFCCBC"/>
-                <circle cx="68" cy="72" r="4" fill="#FFCCBC"/>
-                <!-- 小腿 -->
-                <rect x="42" y="75" width="5" height="12" fill="#9C27B0" rx="2"/>
-                <rect x="53" y="75" width="5" height="12" fill="#9C27B0" rx="2"/>
-                <!-- 小脚 -->
-                <ellipse cx="44" cy="88" rx="5" ry="3" fill="#FFCCBC"/>
-                <ellipse cx="56" cy="88" rx="5" ry="3" fill="#FFCCBC"/>
-            </svg>
+                <img src="assets/img.png" class="baby-image" />
             <div class="reward-text">奖励家庭基金200000元</div>
             <p>🎉 恭喜通关！🎉</p>
             <p>祝亲爱的生日快乐！</p>
@@ -264,12 +261,6 @@
                     cols: 6, 
                     totalPairs: 18,
                     levelName: "第二关"
-                },
-                { 
-                    rows: 8, 
-                    cols: 6, 
-                    totalPairs: 24,
-                    levelName: "第三关"
                 }
             ];
             
@@ -409,7 +400,8 @@
                 matchedPairs: 0,
                 moves: 0,
                 canFlip: true,
-                levelComplete: false
+                levelComplete: false,
+                timerStarted: false
             };
 
             // DOM 元素
@@ -463,6 +455,12 @@
                 if (cardElement.classList.contains('flipped')) return;
                 if (gameState.flippedCards.length >= 2) return;
                 
+                // 首次点击启动计时器
+                if (!gameState.timerStarted) {
+                    startTimer();
+                    gameState.timerStarted = true;
+                }
+                
                 cardElement.classList.add('flipped');
                 cardElement.classList.add('selected');
                 
@@ -480,18 +478,24 @@
                     if (gameState.cards[card1.index].id === gameState.cards[card2.index].id) {
                         // 匹配成功
                         setTimeout(() => {
-                            card1.element.classList.add('matched');
-                            card2.element.classList.add('matched');
+                            // 放大动画
+                            card1.element.style.transform = 'scale(1.5)';
+                            card2.element.style.transform = 'scale(1.5)';
                             
-                            gameState.matchedPairs++;
-                            
-                            gameState.flippedCards = [];
-                            gameState.canFlip = true;
-                            
-                            // 检查是否完成游戏
-                            if (gameState.matchedPairs === config.totalPairs) {
-                                setTimeout(showWinMessage, 500);
-                            }
+                            // 1秒后消失
+                            setTimeout(() => {
+                                card1.element.style.visibility = 'hidden';
+                                card2.element.style.visibility = 'hidden';
+                                
+                                gameState.matchedPairs++;
+                                gameState.flippedCards = [];
+                                gameState.canFlip = true;
+                                
+                                // 检查是否完成游戏
+                                if (gameState.matchedPairs === config.totalPairs) {
+                                    setTimeout(showWinMessage, 500);
+                                }
+                            }, 1000);
                         }, 500);
                     } else {
                         // 不匹配，翻回去
@@ -508,12 +512,15 @@
 
             // 显示胜利消息
             function showWinMessage() {
+                clearInterval(timerInterval);
                 if(currentLevel < levels.length - 1) {
                     // 还有下一关
                     setTimeout(() => {
                         currentLevel++;
                         alert(`恭喜完成${levels[currentLevel-1].levelName}！进入${levels[currentLevel].levelName}`);
+                        resetTimer();
                         initGame();
+                        startTimer();
                     }, 600);
                 } else {
                     // 所有关卡完成
@@ -524,6 +531,7 @@
             // 重置游戏
             function resetGame() {
                 winMessage.style.display = 'none';
+                resetTimer();
                 initGame();
             }
 
@@ -562,6 +570,35 @@
                     }
                 }
             }
+            
+            // 计时器相关变量
+            let timer = 0;
+            let timerInterval = null;
+            
+            // 格式化时间显示
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = (seconds % 60).toString().padStart(2, '0');
+                return `${mins}:${secs}`;
+            }
+            
+            // 开始计时
+            function startTimer() {
+                timer = 0;
+                document.getElementById('timer').textContent = formatTime(timer);
+                clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    timer++;
+                    document.getElementById('timer').textContent = formatTime(timer);
+                }, 1000);
+            }
+            
+            // 重置计时器
+            function resetTimer() {
+                clearInterval(timerInterval);
+                timer = 0;
+                document.getElementById('timer').textContent = formatTime(timer);
+            }
 
             // 事件监听器
             resetBtn.addEventListener('click', resetGame);
@@ -571,6 +608,19 @@
             // 初始化游戏
             initGame();
         });
+        
+        // 开始计时（在首次点击时启动）
+        function startTimer() {
+            if (timerInterval) return; // 避免重复启动
+            
+            timer = 0;
+            document.getElementById('timer').textContent = formatTime(timer);
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timer++;
+                document.getElementById('timer').textContent = formatTime(timer);
+            }, 1000);
+        }
     </script>
 </body>
 </html>
