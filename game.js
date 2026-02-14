@@ -220,7 +220,7 @@ function animateMatchedCards() {
 // 检查关卡是否完成
 function checkLevelComplete() {
   if (matchedCount === totalPairs) {
-    if (currentLevel < 3) {
+    if (currentLevel < 1) {
       currentLevel++;
       setTimeout(() => {
         startLevel(currentLevel);
