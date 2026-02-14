@@ -220,7 +220,7 @@ function animateMatchedCards() {
 // 检查关卡是否完成
 function checkLevelComplete() {
   if (matchedCount === totalPairs) {
-    if (currentLevel < 1) {
+    if (currentLevel < 3) {
       currentLevel++;
       setTimeout(() => {
         startLevel(currentLevel);
@@ -241,8 +241,11 @@ function endGame() {
   reward.style.position = 'fixed';
   reward.style.top = '0';
   reward.style.left = '0';
-  reward.style.width = '100%';
-  reward.style.height = '100%';
+  reward.style.width = '60%';
+  reward.style.height = 'auto';
+  reward.style.top = '20%';
+  reward.style.left = '20%';
+  reward.style.transform = 'translate(0)';
   reward.style.zIndex = '999';
   reward.style.objectFit = 'cover';
   document.body.appendChild(reward);
