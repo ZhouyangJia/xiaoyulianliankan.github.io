@@ -17,6 +17,7 @@ let selectedCards = [];
 let lockBoard = false;
 let matchedCount = 0;
 let totalPairs = 0;
+let stepCount = 0; // Step counter variable
 
 // 初始游戏设置
 function initGame() {
@@ -29,6 +30,9 @@ function initGame() {
 
 // 开始指定关卡
 function startLevel(level) {
+  // Hide start prompt when game starts
+  document.getElementById('start-prompt').style.display = 'none';
+  
   gameContainer.innerHTML = '';
   selectedCards = [];
   matchedCount = 0;
@@ -156,6 +160,10 @@ card.innerHTML = `
 function flipCard() {
   if (lockBoard || this.classList.contains('flipped')) return;
   
+  // Increment step counter and update display
+  stepCount++;
+  document.getElementById('step-counter').textContent = `Steps: ${stepCount}`;
+  
   this.classList.add('flipped');
   selectedCards.push(this);
   
@@ -225,6 +233,9 @@ function checkLevelComplete() {
 
 // 结束游戏
 function endGame() {
+  // Show start prompt again when game ends
+  document.getElementById('start-prompt').style.display = 'block';
+  
   const reward = document.createElement('img');
   reward.src = 'reward.jpg';
   reward.style.position = 'fixed';

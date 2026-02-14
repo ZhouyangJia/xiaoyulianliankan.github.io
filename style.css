@@ -7,15 +7,15 @@ body {
 
 #game-container {
     display: grid;
-    grid-template-columns: repeat(4, 100px);
+    grid-template-columns: repeat(4, 200px);
     gap: 10px;
     margin: 20px auto;
-    width: 410px;
+    width: 830px;
 }
 
 .card {
-    width: 100px;
-    height: 100px;
+    width: 200px;
+    height: 200px;
     margin: 5px;
     perspective: 1000px;
     position: relative;
